@@ -1,0 +1,190 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+local Library = {}
+Library.__index = Library
+
+function Library:Create()
+    local self = setmetatable({}, Library)
+
+    -- Main GUI
+    self.ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+    self.ScreenGui.Name = "CustomUILibrary"
+    self.ScreenGui.ResetOnSpawn = false
+
+    self.MainFrame = Instance.new("Frame", self.ScreenGui)
+    self.MainFrame.Size = UDim2.new(0, 600, 0, 350)
+    self.MainFrame.Position = UDim2.new(0.5, -300, 0.5, -175)
+    self.MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    self.MainFrame.Active = true
+    self.MainFrame.Draggable = true
+
+    self.TabHolder = Instance.new("Frame", self.MainFrame)
+    self.TabHolder.Size = UDim2.new(0, 120, 1, 0)
+    self.TabHolder.Position = UDim2.new(0, 0, 0, 0)
+    self.TabHolder.BackgroundTransparency = 1
+
+    local Separator = Instance.new("Frame", self.MainFrame)
+    Separator.Size = UDim2.new(0, 2, 1, 0)
+    Separator.Position = UDim2.new(0, 120, 0, 0)
+    Separator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+
+    return self
+end
+
+function Library:CreateTab(name)
+    local tab = {}
+
+    local btn = Instance.new("TextButton", self.TabHolder)
+    btn.Size = UDim2.new(1, -10, 0, 40)
+    btn.Position = UDim2.new(0, 5, 0, #self.TabHolder:GetChildren() * 45)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.BorderColor3 = Color3.fromRGB(150, 150, 150)
+    btn.Text = name
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 14
+
+    local content = Instance.new("Frame", self.MainFrame)
+    content.Size = UDim2.new(1, -130, 1, -20)
+    content.Position = UDim2.new(0, 130, 0, 10)
+    content.BackgroundTransparency = 1
+    content.Visible = false
+
+    local layout = Instance.new("UIListLayout", content)
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 10)
+
+    btn.MouseButton1Click:Connect(function()
+        for _, v in ipairs(self.MainFrame:GetChildren()) do
+            if v:IsA("Frame") and v ~= self.TabHolder and v ~= content then
+                v.Visible = false
+            end
+        end
+        content.Visible = true
+    end)
+
+    function tab:CreateSection(title)
+        local section = {}
+        section.Holder = Instance.new("Frame", content)
+        section.Holder.Size = UDim2.new(0, 130, 1, -10)
+        section.Holder.BackgroundTransparency = 1
+
+        local sectionLayout = Instance.new("UIListLayout", section.Holder)
+        sectionLayout.FillDirection = Enum.FillDirection.Vertical
+        sectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        sectionLayout.Padding = UDim.new(0, 5)
+
+        local label = Instance.new("TextLabel", section.Holder)
+        label.Text = title
+        label.Size = UDim2.new(1, 0, 0, 20)
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.BackgroundTransparency = 1
+        label.Font = Enum.Font.SourceSansBold
+        label.TextSize = 16
+
+        function section:NewButton(text, info, callback)
+            local button = Instance.new("TextButton", section.Holder)
+            button.Size = UDim2.new(1, 0, 0, 30)
+            button.Text = text
+            button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            button.TextColor3 = Color3.new(1, 1, 1)
+            button.Font = Enum.Font.SourceSans
+            button.TextSize = 14
+            button.MouseButton1Click:Connect(callback)
+        end
+
+        function section:NewToggle(text, info, callback)
+            local toggle = Instance.new("TextButton", section.Holder)
+            toggle.Size = UDim2.new(1, 0, 0, 30)
+            toggle.Text = text .. " [OFF]"
+            toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            toggle.TextColor3 = Color3.new(1, 1, 1)
+            toggle.Font = Enum.Font.SourceSans
+            toggle.TextSize = 14
+
+            local state = false
+            toggle.MouseButton1Click:Connect(function()
+                state = not state
+                toggle.Text = text .. (state and " [ON]" or " [OFF]")
+                callback(state)
+            end)
+        end
+
+        function section:NewTextbox(placeholder, info, callback)
+            local box = Instance.new("TextBox", section.Holder)
+            box.Size = UDim2.new(1, 0, 0, 30)
+            box.PlaceholderText = placeholder
+            box.Font = Enum.Font.SourceSans
+            box.TextSize = 14
+            box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            box.TextColor3 = Color3.new(1, 1, 1)
+            box.FocusLost:Connect(function(enter)
+                if enter then
+                    callback(box.Text)
+                end
+            end)
+        end
+
+        function section:NewDropdown(text, options, info, callback)
+            local dropdown = Instance.new("TextButton", section.Holder)
+            dropdown.Size = UDim2.new(1, 0, 0, 30)
+            dropdown.Text = text
+            dropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            dropdown.TextColor3 = Color3.new(1, 1, 1)
+            dropdown.Font = Enum.Font.SourceSans
+            dropdown.TextSize = 14
+
+            dropdown.MouseButton1Click:Connect(function()
+                local menu = Instance.new("Frame", dropdown)
+                menu.Position = UDim2.new(0, 0, 1, 0)
+                menu.Size = UDim2.new(1, 0, 0, #options * 20)
+                menu.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+
+                for _, option in ipairs(options) do
+                    local opt = Instance.new("TextButton", menu)
+                    opt.Size = UDim2.new(1, 0, 0, 20)
+                    opt.Text = option
+                    opt.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                    opt.TextColor3 = Color3.new(1, 1, 1)
+                    opt.Font = Enum.Font.SourceSans
+                    opt.TextSize = 12
+
+                    opt.MouseButton1Click:Connect(function()
+                        dropdown.Text = option
+                        menu:Destroy()
+                        callback(option)
+                    end)
+                end
+            end)
+        end
+
+        return section
+    end
+
+    return tab
+end
+
+-- Example Usage
+local MyLibrary = Library:Create()
+
+local CombatTab = MyLibrary:CreateTab("Combat")
+local Section = CombatTab:CreateSection("Main")
+
+Section:NewButton("Test Button", "Click to test", function()
+    print("Button clicked!")
+end)
+
+Section:NewToggle("Enable Power", "Toggles power", function(state)
+    print("Power:", state)
+end)
+
+Section:NewTextbox("Your name...", "Enter a name", function(txt)
+    print("Name:", txt)
+end)
+
+Section:NewDropdown("Choose:", {"One", "Two", "Three"}, "Pick one", function(opt)
+    print("Picked:", opt)
+end)
